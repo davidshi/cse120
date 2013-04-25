@@ -1,9 +1,9 @@
 package nachos.threads;
-
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.PriorityQueue;
+import java.util.NavigableMap;
+import java.util.TreeMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import nachos.machine.*;
 
@@ -21,7 +21,7 @@ public class Alarm
 	 */
 	public Alarm()
 	{
-		waitingThreads = new PriorityQueue<AlarmThread>();
+		alarmThreads = new ConcurrentSkipListMap<Long, KThread>();
 		Machine.timer().setInterruptHandler(new Runnable()
 		{
 			public void run()
@@ -39,30 +39,20 @@ public class Alarm
 	public void timerInterrupt()
 	{
 		boolean intStatus = Machine.interrupt().disable();// disable all interrupts
-		Iterator it = waitingThreads.iterator();
-		//AlarmThread[] alarmThreads = Arrays.sort(waitingThreads.toArray());
-		while (it.hasNext())// while there are still threads
+		//while still threads in the map that should be woken up
+		while ((!alarmThreads.isEmpty()) && (alarmThreads.firstKey() <= Machine.timer().getTime()) )
 		{
-			AlarmThread alarm = (AlarmThread) it.next();
-			Lib.debug(dbgAlarm, "Alarm Time: " + Long.toString(alarm.time));
-			Lib.debug(dbgAlarm, "Machine Time: " + Long.toString( Machine.timer().getTime()));
-			if (alarm.time <= Machine.timer().getTime())// if another thread should be run
+			Lib.debug(dbgAlarm, "Machine Time is:  " + Machine.timer().getTime());
+			Lib.debug(dbgAlarm, "Thread Wakeup Time is: " + alarmThreads.firstKey());
+			if((alarmThreads.firstEntry().getValue() != null))//if the thread is not null
 			{
-				Lib.debug(dbgAlarm, "ready fucks up?");
-				alarm.thread.ready();// context switch
-				Lib.debug(dbgAlarm, "timer interrupt runsB?");
-			}
-			else
-			{
-				Lib.debug(dbgAlarm, "break?");
-				break;
+				alarmThreads.firstEntry().getValue().ready();//wake the thread up
+				alarmThreads.remove(alarmThreads.firstKey());//remove from the map
 			}
 		}
-		Lib.debug(dbgAlarm, "out of it?");
+		
+		KThread.currentThread().yield();//forces a context switch
 		Machine.interrupt().restore(intStatus);// restore all interrupts
-		Lib.debug(dbgAlarm, "what");
-		KThread.yield();
-		Lib.debug(dbgAlarm, "yield not");
 
 	}
 
@@ -98,110 +88,12 @@ public class Alarm
 		 */
 
 		boolean intStatus = Machine.interrupt().disable();// disable all interrupts
-		// add new thread/time to the queue of threads waiting
-		waitingThreads.add(new AlarmThread(KThread.currentThread(), Machine.timer().getTime() + x));
+		alarmThreads.put(Machine.timer().getTime() + x, KThread.currentThread());// add new thread/time to the hashmap
 		KThread.currentThread().sleep();// block current thread
-		//KThread.sleep();
 		Machine.interrupt().restore(intStatus);// restore all interrupts
 	}
 
-	/**
-	 * Class to represent alarm threads that are in the wait cycle
-	 */
-	/* zack p1t3 */
-	private class AlarmThread implements Comparable<AlarmThread>
-	{
-		private KThread thread;// alarm thread that is waiting
-		private long time;// number of clock ticks to wait
-
-		public AlarmThread(KThread k, long t)// constructor to set thread and time
-		{
-			this.thread = k;
-			this.time = t;
-		}
-
-		@Override
-		public int compareTo(AlarmThread a)
-		{
-			if (time < a.time)
-			{
-				return -1;
-			}
-			if (time > a.time)
-			{
-				return 1;
-			} else
-			{
-				return 0;
-			}
-		}
-	}
-
-	// priority queue to hold alarm threads, by time
-	PriorityQueue<AlarmThread> waitingThreads;
+	private ConcurrentSkipListMap<Long, KThread> alarmThreads;//hashmap to hold all threads with their associated wait times
 
 	private static final char dbgAlarm = 'a';
-
-	/*public static void selfTest()
-	{
-		AlarmTest.runTest();
-	}*/
-	
-	/**
-	 * Run sanity check on Alarm.waitUntil
-	 */
-	public static void selfTest() {
-		Lib.debug(dbgAlarm, "Alarm Self Test");
-
-		// Test that alarm wakes up thread after proper amount of time
-		KThread thread = new KThread(new Runnable() {
-			public void run() {
-				final long ticks = 1000;
-				long sleepTime = Machine.timer().getTime();
-				//Lib.debug(dbgAlarm, "In run");
-				ThreadedKernel.alarm.waitUntil(ticks);
-				//Lib.debug(dbgAlarm, "Wait Until runs");
-				long wakeTime = Machine.timer().getTime();
-
-				Lib.debug(dbgAlarm, (((wakeTime-sleepTime>=ticks) ? "[PASS]" : "[FAIL]") + ": Thread slept at least " + ticks + " ticks " + sleepTime + "->" + wakeTime));
-			}
-		});
-		thread.fork();
-		thread.join();
-
-		// Test that several sleeping threads wake up in order
-		KThread threadA = new KThread(new TestSeqThread('A',100));
-		KThread threadB = new KThread(new TestSeqThread('B',700));
-		KThread threadC = new KThread(new TestSeqThread('C',1400));
-
-		threadA.fork(); threadB.fork(); threadC.fork();
-		threadA.join(); threadB.join(); threadC.join();
-
-		Lib.debug(dbgAlarm, (TestSeqThread.wakeSequence.equals("ABC") ? "[PASS]" : "[FAIL") + ": Threads woke up in order (" + TestSeqThread.wakeSequence + ")");
-	}
-
-	/**
-	 * For testing:
-	 * Thread which immediately sleeps and keeps a static record
-	 * of the order in which it and its siblings wake up
-	 */
-	private static class TestSeqThread implements Runnable {
-		char myName;
-		long mySleepTicks;
-
-		static String wakeSequence = "";
-		static Lock lock = new Lock();
-
-		public TestSeqThread(char name, long sleepTicks) {
-			myName = name;
-			mySleepTicks = sleepTicks;
-		}
-
-		public void run() {
-			ThreadedKernel.alarm.waitUntil(mySleepTicks);
-			lock.acquire();
-			wakeSequence = wakeSequence + myName;
-			lock.release();
-		}
-	}
 }
