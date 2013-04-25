@@ -38,7 +38,7 @@ public class Communicator
 	public void speak(int word)
 	{
 		lock.acquire();//get lock
-		while (numberListeners == 0 || messageReady == true)//there is no listener or message to be sent
+		while (messageReady == true || numberListeners == 0)//there is no listener or message to be sent
 		{
 			speaker.sleep();//wait!
 		}
@@ -78,5 +78,7 @@ public class Communicator
 	private int numberListeners; //listener counter
 	
 	private boolean messageReady;//if the word is ready to send
+
+	private static final char dbgCommunicator = 'c';
 
 }

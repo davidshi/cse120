@@ -441,7 +441,7 @@ public class KThread
 		{
 			for (int i = 0; i < 5; i++)
 			{
-				System.out.println("*** thread " + which + " looped " + i
+				System.out.println("*** awesome " + which + " looped " + i
 				        + " times");
 				currentThread.yield();
 			}
@@ -485,7 +485,7 @@ public class KThread
 	private Runnable target;
 	private TCB tcb;
 	/* zack p1t1 */
-	private ArrayList<KThread> joinThread = null;// queue of threads joined
+	private ArrayList<KThread> joinThread = null;//list of threads joined
 	/**
 	 * Unique identifer for this thread. Used to deterministically compare threads.
 	 */

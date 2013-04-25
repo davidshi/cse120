@@ -56,6 +56,8 @@ public class ThreadedKernel extends Kernel {
 		Semaphore.selfTest();
 		SynchList.selfTest();
 		//Alarm.selfTest();
+		//Communicator.selfTest();
+		//Condition2.selfTest();
 		if (Machine.bank() != null) {
 			ElevatorBank.selfTest();
 		}
@@ -98,7 +100,14 @@ public class ThreadedKernel extends Kernel {
 	private static Rider dummy6 = null;
   
 	private static ElevatorController dummy7 = null;
-  
+	public static class alarmTest 
+	{
+		public static KThread controller = null;
+		public static KThread a = null;
+		public static KThread b = null;
+		public static Alarm alarm = new Alarm();
+	}
+	
 	/**
 	 * Exercises my implementation of the listen and speak method inside
 	 * nachos.threads.Communication.

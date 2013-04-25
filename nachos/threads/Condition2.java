@@ -32,7 +32,7 @@ public class Condition2
 	{
 		this.conditionLock = conditionLock;
 		/*zack p1t2*/
-		otherWaitQueue = new ArrayList<KThread>();
+		waitList = new ArrayList<KThread>();
 	}
 
 	/**
@@ -46,7 +46,7 @@ public class Condition2
 		/*zack p1t2*/
 		Lib.assertTrue(conditionLock.isHeldByCurrentThread());//make sure thread holds lock
 		boolean intStatus = Machine.interrupt().disable();//disable all interrupts
-		otherWaitQueue.add(KThread.currentThread());//stores the current thread until wake is called
+		waitList.add(KThread.currentThread());//stores the current thread until wake is called
 		
 		conditionLock.release();
 		
@@ -67,9 +67,9 @@ public class Condition2
 		boolean intStatus = Machine.interrupt().disable();//disable all interrupts
 		
 		/*zack p1t2*/
-		if(!otherWaitQueue.isEmpty())//if there is still a thread in the queue, wake it up
+		if(!waitList.isEmpty())//if there is still a thread in the queue, wake it up
 		{
-			KThread wakeUp = otherWaitQueue.remove(0);//next thread to wake
+			KThread wakeUp = waitList.remove(0);//next thread to wake
 			wakeUp.ready();//wake it up
 		}
 		
@@ -87,9 +87,9 @@ public class Condition2
 		boolean intStatus = Machine.interrupt().disable();//disable all interrupts
 		
 		/*zack p1t2*/
-		while(!otherWaitQueue.isEmpty())//wake all threads up 
+		while(!waitList.isEmpty())//wake all threads up 
 		{
-			KThread wakeUp = otherWaitQueue.remove(0);//next thread to wake
+			KThread wakeUp = waitList.remove(0);//next thread to wake
 			wakeUp.ready();//wake it up
 		}
 		
@@ -98,5 +98,6 @@ public class Condition2
 	
 	private Lock conditionLock;
 	/*zack p1t2*/
-	private ArrayList<KThread> otherWaitQueue;//queue of wait threads
+	private ArrayList<KThread> waitList;//list of wait threads
+	
 }

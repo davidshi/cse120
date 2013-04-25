@@ -50,10 +50,8 @@ public class Alarm
 				alarmThreads.remove(alarmThreads.firstKey());//remove from the map
 			}
 		}
-		
-		KThread.currentThread().yield();//forces a context switch
 		Machine.interrupt().restore(intStatus);// restore all interrupts
-
+		KThread.currentThread().yield();//forces a context switch
 	}
 
 	/**
